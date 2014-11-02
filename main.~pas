@@ -10,7 +10,10 @@ type
   TForm1 = class(TForm)
     Button1: TButton;
     Image1: TImage;
+    Button2: TButton;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -374,7 +377,7 @@ const
   MAX_WIDTH = 1353;
   MAX_HEIGHT = 633;
   PADDING = 10;
-  SQR_MAX_DIST = sqr(10);
+  SQR_MAX_DIST = sqr(14);
   MAX_DIST_DIFF = 0.1;
   MAX_COUNT = 5;
   RAND_SEED = 100;
@@ -383,8 +386,8 @@ const
   R_LAND = 7;
   R_GREEN = 3;
   R_TARGET = 7;
-  DRAW_PATH = false;
-  TEST_COUNT = 0;
+  DRAW_PATH = true;
+  TEST_COUNT = 1;
 var
   i, j, u: Integer;
   deg_count: Integer;
@@ -397,9 +400,9 @@ var
 begin
   RandSeed := RAND_SEED;
 
-  N := 0;
+  N := 12000;
 
-  {SetLength(a, N);
+  SetLength(a, N);
   for i := 0 to N - 1 do begin
       a[i].x := random(MAX_WIDTH - 2 * PADDING) + PADDING;
       a[i].y := random(MAX_HEIGHT - 2 * PADDING) + PADDING;
@@ -414,13 +417,13 @@ begin
         SetLength(e[j], Length(e[j]) + 1);
         e[i][High(e[i])].v := j;
         e[j][High(e[j])].v := i;
-        e[i][High(e[i])].w := sqrt(sqrdist(a[i], a[j])) * (random * MAX_DIST_DIFF + 1);
+        e[i][High(e[i])].w := sqrt(sqrdist(a[i], a[j])) * ((1 + random) / 2 * MAX_DIST_DIFF + 1);
         e[j][High(e[j])].w := e[i][High(e[i])].w;
         Inc(deg_count);
         if deg_count >= MAX_COUNT then
           break;
       end;
-  end;}
+  end;
 
   Image1.Canvas.Pen.Color := RGB(180, 180, 180);
   for i := 0 to N - 1 do
@@ -466,21 +469,21 @@ begin
 
   //ALT_Preprocessing();
 
-  {SetLength(go, Length(a));
+  SetLength(go, Length(a));
   SetLength(used, Length(a));
 
-  go[target] := target;}
+  go[target] := target;
 
   time_stamp := GetTickCount;
   for i := 1 to TEST_COUNT do begin
     //Dijkstra(0, target);
-    //A_Star(0, target);
-    ALT(0, target);
+    A_Star(0, target);
+    //ALT(0, target);
   end;
   if TEST_COUNT > 0 then
     Caption := 'Vertexed seen: ' + IntToStr(count) + ', time elapsed: ' + FloatToStr((GetTickCount - time_stamp) / TEST_COUNT) + ' ms';
 
-  {for i := 0 to N - 1 do begin
+  for i := 0 to N - 1 do begin
     if (i = target) or (i = 0) then begin
       Image1.Canvas.Brush.Color := clRed;
       Image1.Canvas.Ellipse(a[i].x - R_TARGET, a[i].y - R_TARGET, a[i].x + R_TARGET, a[i].y + R_TARGET);
@@ -491,12 +494,12 @@ begin
       Image1.Canvas.Brush.Color := clWhite;
       Image1.Canvas.Ellipse(a[i].x - R, a[i].y - R, a[i].x + R, a[i].y + R);
     end;
-  end;}
+  end;
 
-  {Image1.Canvas.Brush.Color := clYellow;
+  Image1.Canvas.Brush.Color := clYellow;
   for i := 0 to High(marks) do begin
     Image1.Canvas.Ellipse(a[marks[i]].x - R_LAND, a[marks[i]].y - R_LAND, a[marks[i]].x + R_LAND, a[marks[i]].y + R_LAND);
-  end;}
+  end;
 
   Image1.Canvas.Pen.Width := 3;
 
@@ -511,9 +514,85 @@ begin
 
   end;
 
-  Image1.Canvas.Pen.Width := 1;
+  Image1.Canvas.Pen.Width := 1;  
 
 end;
 
+function GenerateTown(N, x, y, r, s: Integer): Integer;
+const
+  RAND_DIFF = 0.1;
+var
+  i: Integer;
+  l: Double;
+  sin_a, cos_a, alpha: Double;
+begin
+
+  // Main street
+  alpha := pi * random;
+  cos_a := cos(alpha);
+  sin_a := sin(alpha);
+  l := 2 * r / s;
+  SetLength(a, Length(a) + s);
+  SetLength(e, Length(a));
+  a[N] := Point(Round(x - r * cos_a), Round(y - r * sin_a));
+  for i := 1 to s - 1 do begin
+    a[N + i] := Point(a[N + i - 1].x + Round(l * cos_a * (1 + (1 + random) / 2 * RAND_DIFF)), a[N + i - 1].y + Round(l * sin_a * (1 + (1 + random) / 2 * RAND_DIFF)));
+    SetLength(e[N + i], Length(e[N + i]) + 1);
+    e[N + i][High(e[N + i])].v := N + i - 1;
+    e[N + i][High(e[N + i])].w := sqrt(sqrdist(a[N + i], a[N + i - 1]));
+    SetLength(e[N + i - 1], Length(e[N + i - 1]) + 1);
+    e[N + i - 1][High(e[N + i - 1])].v := N + i;
+    e[N + i - 1][High(e[N + i - 1])].w := sqrt(sqrdist(a[N + i], a[N + i - 1]));
+  end;
+
+  result := N + s;
+
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+const
+  MAX_WIDTH = 1353;
+  MAX_HEIGHT = 633;
+  PADDING = 10;
+  SQR_MAX_DIST = sqr(10);
+  MAX_DIST_DIFF = 0.1;
+  MAX_COUNT = 5;
+  RAND_SEED = 100;
+  INF: Double = 1/0;
+  R = 0;
+  R_LAND = 7;
+  R_GREEN = 3;
+  R_TARGET = 7;
+  DRAW_PATH = false;
+  TEST_COUNT = 0;
+var
+  i, j, u: Integer;
+  deg_count: Integer;
+  target: Integer;
+  min: Double;
+  min_id: Integer;
+  mk: array of TPoint;
+  N: Integer;
+  time_stamp: Integer;
+begin
+  RandSeed := RAND_SEED;
+  N := 0;
+
+  N := N + GenerateTown(N, 300, 300, 100, 20);
+
+  Image1.Canvas.Pen.Color := RGB(180, 180, 180);
+  for i := 0 to N - 1 do
+    for j := 0 to High(e[i]) do begin
+      Image1.Canvas.MoveTo(a[i].x, a[i].y);
+      Image1.Canvas.LineTo(a[e[i][j].v].x, a[e[i][j].v].y);
+    end;
+  Image1.Canvas.Pen.Color := clBlack;
+
+end;
+
+procedure TForm1.FormActivate(Sender: TObject);
+begin
+  Button2.SetFocus;
+end;
 
 end.
